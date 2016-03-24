@@ -1,5 +1,5 @@
-#Author: Suchee
-#email: sucheendra.palaniappan@inria.fr
+%Author: Suchee
+%email: sucheendra.palaniappan@inria.fr
 
 function automated_analyzer
 tic;
