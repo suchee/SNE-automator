@@ -31,7 +31,7 @@ sample_tissue={};
 sample_dpi={};
 sample_mouse={};
 
-sample_size = 10000;
+sample_size = 1000;
 
 for i=1:numel(files)
     [~,name,~] = fileparts(char(files(i)));
@@ -55,6 +55,12 @@ end
 disp(sprintf('Files loaded: %gs',toc));
 
 global nfcs;
+
+
+global file_name_add;
+file_name_add = datestr(clock,30);
+mkdir(file_name_add)
+addpath(file_name_add)
 
 y = 0;
 nfcs = size(fcsdats, 2);	
@@ -131,8 +137,7 @@ for i=1:numel(temp_source)
     data_cluster_heat_map(nfcs+1+i,newGatename);
 end
 
-
-save(datestr(clock,30));
+save(strcat(file_name_add,'/',file_name_add));
 
 end
 
@@ -425,6 +430,7 @@ function data_cluster_heat_map(selected_gates,gate_name)
     global original_number_of_channels;
     global sessionData;
     global gates;
+    global file_name_add;
     %global nfcs; 
     
     selected_channels = [1:original_number_of_channels];
@@ -473,7 +479,8 @@ function data_cluster_heat_map(selected_gates,gate_name)
     channel_names_to_print = channel_names(selected_channels);
     marker_means = [channel_names_to_print;num2cell(marker_means)];
     cells_pr_cluster = [cellstr({'percentage'});num2cell(cells_pr_cluster)];
-    
     data_str_out=[marker_means cells_pr_cluster];
+    cd (file_name_add);
     cell2csv(strcat(gate_name,'.csv'),data_str_out);
+    cd ..;
 end
