@@ -469,7 +469,10 @@ function data_cluster_heat_map(selected_gates,gate_name)
             marker_means(i,:) = mean(data(sessionData(gate_context, cluster_channel)==clusters_in_sample(i),:),1);
         end
         
+        marker_means_temp = marker_means;
         marker_means = mynormalize(marker_means, 100);
+        marker_means_temp(marker_means_temp<0)=0;
+        marker_means_temp = mynormalize(marker_means_temp, 100);
       
         %find percentage of cells belonging to each cluster
         cells_pr_cluster = countmember(clusters_in_sample,sessionData(gate_context,cluster_channel))/length(gate_context);
@@ -478,9 +481,14 @@ function data_cluster_heat_map(selected_gates,gate_name)
     
     channel_names_to_print = channel_names(selected_channels);
     marker_means = [channel_names_to_print;num2cell(marker_means)];
+    marker_means_temp = [channel_names_to_print;num2cell(marker_means_temp)];
+    
     cells_pr_cluster = [cellstr({'percentage'});num2cell(cells_pr_cluster)];
     data_str_out=[marker_means cells_pr_cluster];
+    data_str_out_2=[marker_means_temp cells_pr_cluster];
+    
     cd (file_name_add);
+    cell2csv(strcat(gate_name,'_NegTo0_','.csv'),data_str_out_2);
     cell2csv(strcat(gate_name,'.csv'),data_str_out);
     cd ..;
 end
