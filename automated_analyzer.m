@@ -4,7 +4,37 @@
 function automated_analyzer
 tic;
 
-files = {'/Users/spalania/Desktop/thiagu-data/Mouse1_blood.fcs','/Users/spalania/Desktop/thiagu-data/Mouse2_blood.fcs','/Users/spalania/Desktop/thiagu-data/Mouse3_blood.fcs','/Users/spalania/Desktop/thiagu-data/Mouse4_blood.fcs'};
+files = {'/Users/spalania/Desktop/thiagu-data/naive_22_m3_blood.fcs','/Users/spalania/Desktop/thiagu-data/naive_22_m3_thymus.fcs','/Users/spalania/Desktop/thiagu-data/tumor_15_m4_blood.fcs','/Users/spalania/Desktop/thiagu-data/tumor_15_m4_CLNs.fcs'};
+
+global sample_dpi;
+global sample_mouse;
+global sample_tissue;
+global sample_types;
+global sample_types_name;
+
+sample_types={};
+sample_tissue={};
+sample_dpi={};
+sample_mouse={};
+
+sample_size = 10000;
+
+for i=1:numel(files)
+    [~,name,~] = fileparts(char(files(i)));
+    components = strread(name,'%s','delimiter','_');
+    if (strcmp(components(1),'naive')==1)
+        sample_types=[sample_types;1];
+        sample_types_name = [sample_types_name;components(1)];
+    else
+        if(strcmp(components(1),'tumor')==1)
+            sample_types=[sample_types;2];
+            sample_types_name = [sample_types_name;components(1)];
+        end
+    end
+    sample_dpi=[sample_dpi;components(2)];
+    sample_mouse=[sample_mouse;components(3)];
+    sample_tissue=[sample_tissue;components(4)];
+end
 
 [fcsdats fcshdrs]=cellfun(@fca_readfcs, files, 'UniformOutput', false);
 
@@ -18,9 +48,6 @@ for i=1:nfcs
     y = max([y size(fcsdats{i}, 2)]);
 end
 
-% read all data to one huge matrix
-% and defined gates according to each filename
-% sessionData  = retr('sessionData');
 
 global sessionData 
 global gates
@@ -56,7 +83,6 @@ for i=1:nfcs
 end
 
 selected_gates = [1:nfcs];
-sample_size = 10000;
 global gate_indices;
 
 [gate_indices, channel_names] = getSelectedIndices(selected_gates);
@@ -70,11 +96,14 @@ createNewGate(rand_sample, channel_names, {'sample_all'});
 if numel(selected_gates) > 1
     global sessionData;
     v = zeros(size(sessionData,1), 1);
+    v_s = zeros(size(sessionData,1), 1);
 
     for j=selected_gates
         v(gates{j, 2}) = j;
+        v_s(gates{j, 2}) = sample_types{j};
     end
     addChannels({'gate_source'}, v(:), 1:numel(v), size(gates, 1));
+    addChannels({'sample_source'}, v_s(:), 1:numel(v_s), size(gates, 1));
 end
 
 save('testing_before')
@@ -82,11 +111,14 @@ save('testing_before')
 runTSNE(2);
 phenoEach();
 gateContext = gates{[nfcs+1], 2};
-temp_source = unique(sessionData(gateContext,14));
+temp_source = unique(sessionData(gateContext,original_number_of_channels+1));
 for i=1:numel(temp_source)
-    gate_indeces_gate=find(sessionData(gateContext,14) == temp_source(i,1));
-    createNewGate(gateContext(gate_indeces_gate),gates{[nfcs+1], 3},{num2str(temp_source(i,1))});
+    gate_indeces_gate=find(sessionData(gateContext,original_number_of_channels+1) == temp_source(i,1));
+    newGatename = strcat(sample_types_name{i},'_',sample_dpi{i},'_',sample_mouse{i},'_',sample_tissue{i});
+    createNewGate(gateContext(gate_indeces_gate),gates{[nfcs+1], 3},{newGatename});
+    data_cluster_heat_map(nfcs+1+i,newGatename);
 end
+
 
 save('testing_after')
 
@@ -377,3 +409,59 @@ function phenoEach
     end
 end
 
+function data_cluster_heat_map(selected_gates,gate_name)
+    global original_number_of_channels;
+    global sessionData;
+    global gates;
+    %global nfcs; 
+    
+    selected_channels = [1:original_number_of_channels];
+    %selected_gates    = nfcs+1;
+    gate_names        = gates(selected_gates, 1);
+    gate_context = gates{[selected_gates], 2};
+    channel_names     = gates{[selected_gates], 3};
+    
+        
+    
+    %find cluster channel
+    cluster_channel = original_number_of_channels+2+2+1;
+    channel_index = [original_number_of_channels+1,original_number_of_channels+2,original_number_of_channels+2+2+1];
+    
+    % show the heat map with clusters
+    show_by_cluster_channel = true;
+    
+    % show the heat map gates
+    %show_by_cluster_channel = false;
+
+    if (show_by_cluster_channel)
+        
+        clusters_in_sample = unique(sessionData(gate_context, cluster_channel));
+
+        %Ignoring cluster No. 0 
+        clusters_in_sample = clusters_in_sample(clusters_in_sample~=0);
+        
+        num_clusters = length(clusters_in_sample);
+
+        %finding mean values of marker levels for each cluster
+        marker_means = zeros(num_clusters, length(selected_channels));
+        data = sessionData(gate_context, selected_channels);
+
+        %looping through clusters
+        for i=1:length(clusters_in_sample)
+            marker_means(i,:) = mean(data(sessionData(gate_context, cluster_channel)==clusters_in_sample(i),:),1);
+        end
+        
+        marker_means = mynormalize(marker_means, 100);
+      
+        %find percentage of cells belonging to each cluster
+        cells_pr_cluster = countmember(clusters_in_sample,sessionData(gate_context,cluster_channel))/length(gate_context);
+       
+    end
+    
+    channel_names_to_print = channel_names(selected_channels);
+    marker_means = [channel_names_to_print;num2cell(marker_means)];
+    cells_pr_cluster = [cellstr({'percentage'});num2cell(cells_pr_cluster)];
+    
+    data_str_out=[marker_means cells_pr_cluster];
+    cell2csv(strcat(gate_name,'.csv'),data_str_out);
+end
