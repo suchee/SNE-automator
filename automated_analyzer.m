@@ -1,6 +1,20 @@
 %Author: Suchee
 %email: sucheendra.palaniappan@inria.fr
 
+% This script automates the process of running the ViSNE tool.
+% Things to change: A strict naming convention is to be followed whie
+% naming the input files (MouseType)_(dpi)_(Mousenumber)_(tissue)
+% examples "naive_22_m3_thymus", "tumor_15_m4_CLNs"
+%IMPORTANT: UNDERSCORED SEPERATE THE FIELDS AND HENCE NO OTHER UNDERSCORE SHOULD BE
+%USED
+%-Additionally change the sample_size variable to the number of sample you
+%intend to draw from the original set of files
+%-An output dump is saved for every single run which is named with the time stamp of when the program was run
+%- Phenograph setting: change the following variables
+%    mehtod=1; (for 'run on individual gates')
+%    k_neigh='100';
+%    selection=7 (based on the rank in this list: 'euclidean'; 'seuclidean';'cosine'; 'correlation';'spearman';'cityblock';'mahalanobis'; );
+
 function automated_analyzer
 tic;
 
@@ -106,8 +120,6 @@ if numel(selected_gates) > 1
     addChannels({'sample_source'}, v_s(:), 1:numel(v_s), size(gates, 1));
 end
 
-save('testing_before')
-
 runTSNE(2);
 phenoEach();
 gateContext = gates{[nfcs+1], 2};
@@ -120,7 +132,7 @@ for i=1:numel(temp_source)
 end
 
 
-save('testing_after')
+save(datestr(clock,30));
 
 end
 
