@@ -479,7 +479,7 @@ function data_cluster_heat_map(selected_gates,gate_name)
        
     end
     
-    channel_names_to_print = channel_names(selected_channels);
+    channel_names_to_print = channel_names(selected_channels); 
     marker_means = [channel_names_to_print;num2cell(marker_means)];
     marker_means_temp = [channel_names_to_print;num2cell(marker_means_temp)];
     
