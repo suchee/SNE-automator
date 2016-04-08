@@ -482,10 +482,13 @@ function data_cluster_heat_map(selected_gates,gate_name)
     channel_names_to_print = channel_names(selected_channels); 
     marker_means = [channel_names_to_print;num2cell(marker_means)];
     marker_means_temp = [channel_names_to_print;num2cell(marker_means_temp)];
+ 
+    cluster_identities(:,1) = num2cell(1:size(cells_pr_cluster,1));
+    cluster_identities = [cellstr({'cluster'});cluster_identities];
     
     cells_pr_cluster = [cellstr({'percentage'});num2cell(cells_pr_cluster)];
-    data_str_out=[marker_means cells_pr_cluster];
-    data_str_out_2=[marker_means_temp cells_pr_cluster];
+    data_str_out=[marker_means cells_pr_cluster cluster_identities];
+    data_str_out_2=[marker_means_temp cells_pr_cluster cluster_identities];
     
     cd (file_name_add);
     cell2csv(strcat(gate_name,'_NegTo0_','.csv'),data_str_out_2);
